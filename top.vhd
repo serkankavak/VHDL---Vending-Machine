@@ -1,5 +1,6 @@
+-- Engineer: 	   Serkan Kavak
 -- Create Date:    13:48:05 12/10/2017 
--- Design Name: 
+-- Design Name:	   Vending Machine
 -- Module Name:    top - Behavioral
 
 library IEEE;
@@ -9,12 +10,9 @@ use IEEE.NUMERIC_STD.ALL;
 entity top is
 Port(
 		clk, reset : in std_logic;
-		
 		item_select : in std_logic_vector (1 downto 0);
-		
-		tl_select : in std_logic_vector (2 downto 0);
 		request : in std_logic;
-		
+		one_tl : in std_logic;
 		take_item : in std_logic;
 		
 		leds : out std_logic;
@@ -42,101 +40,156 @@ component seven_four is
 			);
 end component;
 
-signal one_mhz_clock : std_logic;
+signal one_hz_clock : std_logic;
 
+-- Seven Segment Signals
 signal in1, in2 : std_logic_vector (3 downto 0);
-
 signal dp : std_logic;
 signal seg_sel_4 : std_logic_vector (3 downto 0);
 signal seg_out_7 : std_logic_vector (6 downto 0);
 
+-- LED Signal
 signal state_reg_led: std_logic;
 
 signal state_out: std_logic_vector (3 downto 0);
 
 type state_type is
 	(Water, Chocolate , Coke, Cookies, state_reset,
-		state_result);
+		Chocolate_1, Coke_1, Coke_2, 
+		Cookies_1, Cookies_2, Cookies_3, 
+		state_result, state_take );
 		
 signal state_reg, state_next : state_type;
 
 
 begin
 
+-- 100MHz to 1Hz
 Convert_to_1Hz : Converter_1HZ
-	Port map(clk => clk, enable=> '1', clock_out=>one_mhz_clock);
+	Port map(clk => clk, enable=> '1', clock_out=>one_hz_clock);
 
 
 -- STATE REGISTER
-Process(one_mhz_clock, reset)
+Process(one_hz_clock, reset)
 	begin
 		if(reset ='1') then
 			state_reg <= state_reset;
-		
-			
-		elsif (one_mhz_clock'event and one_mhz_clock = '1') then
+
+		elsif (one_hz_clock'event and one_hz_clock = '1') then
 			state_reg <= state_next;
 		end if;
-		
 	end process;
 
----- INPUT LOGIC
-Process(state_reg, item_select, request)
-	begin
-	
-	case state_reg is
-		when Water=> 
-			if (tl_select >= "001") then
-				state_next <= state_result;
-				else state_next <= Water;
-			end if;
-			
-		when Chocolate=> 
-				if (tl_select >= "010") then
-				state_next <= state_result;
-				else state_next <= Chocolate;
-			end if;
-	
-		
-		when Coke=>
-			if (tl_select >= "011") then
-				state_next <= state_result;
-				else state_next <= Coke;
-			end if;
 
-		when Cookies=>
-			if (tl_select >= "100") then
-				state_next <= state_result;
-				else state_next <= Cookies;
-			end if;
-			
-		when state_reset=>
-		  in1 <= (others=> '0');
-			if request='1' then
-				case item_select is
-					when "00"=>
-						state_next <= Water;
-					when "01"=>
-						state_next <= Chocolate;
-					when "10"=>
-						state_next <= Coke;
-					when others=>
-						state_next <= Cookies;
-				end case;
-			else state_next <= state_reset;
-			end if;
-			
-		when state_result=>
-			if take_item ='1' then
-				state_next <= state_reset;
-			else state_next <= state_result;
+---- INPUT LOGIC
+Process(one_hz_clock, state_reg, item_select, one_tl, request)
+	begin
+	if (one_hz_clock'event and one_hz_clock = '1') then
+		case state_reg is
+			when Water=> 
+				if one_tl = '1' then
+					state_next <= state_result;
+					in1 <= std_logic_vector( unsigned(in1) +1);
+				else 
+					state_next <= Water;
 				end if;
-		
-	--	when state_take=>
-	--		state_next <= state_reset;
+				
+			when Chocolate=> 
+				if one_tl = '1' then
+					state_next <= Chocolate_1;
+					in1 <= std_logic_vector( unsigned(in1) +1);
+				else 
+					state_next <= Chocolate;
+				end if;
+				
+			when Chocolate_1=>
+				if one_tl = '1' then
+					state_next <= state_result;
+					in1 <= std_logic_vector( unsigned(in1) +1);
+				else 
+					state_next <= Chocolate_1;
+				end if;
 			
-	end case;
+			when Coke=>
+				if one_tl = '1' then
+					state_next <= Coke_1;
+					in1 <= std_logic_vector( unsigned(in1) +1);
+				else 
+					state_next <= Coke;
+				end if;
+				
+			when Coke_1=>
+				if one_tl ='1' then 
+					state_next <= Coke_2;
+					in1 <= std_logic_vector( unsigned(in1) +1);
+				else 
+					state_next <= Coke_1;
+				end if;
+					
+			when Coke_2=>
+				if one_tl ='1' then 
+					state_next <= state_result;
+					in1 <= std_logic_vector( unsigned(in1) +1);
+				else 
+					state_next <= Coke_2;
+				end if;
+					
+			when Cookies=>
+				if one_tl ='1' then 
+					state_next <= Cookies_1;
+					in1 <= std_logic_vector( unsigned(in1) +1);
+				else 
+					state_next <= Cookies;
+				end if;
+					
+			when Cookies_1=>
+				if one_tl ='1' then 
+					state_next <= Cookies_2;
+					in1 <= std_logic_vector( unsigned(in1) +1);
+				else 
+					state_next <= Cookies_1;
+				end if;
+					
+			when Cookies_2=>
+				if one_tl ='1' then 
+					state_next <= Cookies_3;
+					in1 <= std_logic_vector( unsigned(in1) +1);
+				else 
+					state_next <= Cookies_2;
+				end if;
+			
+			when Cookies_3=>
+				if one_tl ='1' then 
+					state_next <= state_result;
+					in1 <= std_logic_vector( unsigned(in1) +1);
+				else 
+					state_next <= Cookies_3;
+				end if;
+				
+			when state_reset=>
+			  in1 <= (others=> '0');
+				if request='1' then
+					case item_select is
+						when "00"=>
+							state_next <= Water;
+						when "01"=>
+							state_next <= Chocolate;
+						when "10"=>
+							state_next <= Coke;
+						when others=>
+							state_next <= Cookies;
+					end case;
+				else state_next <= state_reset;
+				end if;
+				
+			when state_result=>
+				if take_item ='1' then
+					state_next <= state_reset;
+				else state_next <= state_result;
+					end if;
+		end case;
 	
+	end if;
 			
 end process;
 	
@@ -150,28 +203,19 @@ seg_sel <= "1111" & seg_sel_4;
 	
  
 state_reg_led <= '1' when state_reg = state_result 
-				else '0';
+		  else '0';
  
 leds <= state_reg_led;
 
---in1 <= std_logic_vector( unsigned(in1) +1) 
---	when (one_tl = '1') and (state_reg = state_result or state_reg = Chocolate_1 or state_reg = Coke_1 or
---								  state_reg = Coke_2 or state_reg = Cookies_1 or state_reg = Cookies_2 or 
---								  state_reg = Cookies_3)
---		else (others=> '0') when state_reg = state_reset
---		else in1;
-
 state_out <= "0000" when (state_reg = Water) else
-				 "0001" when (state_reg = Chocolate) else
-				 "0010" when (state_reg = Coke) else
-				 "0011" when (state_reg = Cookies) else
-				 "0100" when (state_reg = state_result) else
-				 "1111" when (state_reg = state_reset) else
-				 "1010" ;
+			 "0001" when (state_reg = Chocolate) else
+			 "0010" when (state_reg = Coke) else
+			 "0011" when (state_reg = Cookies) else
+			 "0100" when (state_reg = state_result) else
+			 "1111" when (state_reg = state_reset) else
+			 "1010" ;
 				 
 in2 <= state_out;
-
-
 
 end Behavioral;
 
