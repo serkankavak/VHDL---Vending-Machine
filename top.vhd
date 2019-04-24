@@ -23,9 +23,9 @@ end top;
 architecture Behavioral of top is
 
 component Converter_1HZ is
-Port(   clk : in STD_LOGIC;
-		enable : in STD_LOGIC;
-		clock_out : out STD_LOGIC);
+Port( clk : in STD_LOGIC;
+      enable : in STD_LOGIC;
+      clock_out : out STD_LOGIC);
 end component;
 
 component seven_four is
@@ -34,7 +34,7 @@ component seven_four is
            in3 : in  STD_LOGIC_VECTOR (3 downto 0);
            in4 : in  STD_LOGIC_VECTOR (3 downto 0);
            clk : in  STD_LOGIC;
-		   dp  : out  STD_LOGIC;
+	   dp  : out  STD_LOGIC;
            sel : out  STD_LOGIC_VECTOR (3 downto 0);
            segment : out  STD_LOGIC_VECTOR (6 downto 0)
 			);
@@ -203,7 +203,7 @@ seg_sel <= "1111" & seg_sel_4;
 	
  
 state_reg_led <= '1' when state_reg = state_result 
-		  else '0';
+				else '0';
  
 leds <= state_reg_led;
 
